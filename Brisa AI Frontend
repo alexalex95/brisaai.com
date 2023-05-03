@@ -1,0 +1,63 @@
+import {getAnswerFromAI,generatePrompt} from 'backend/open-ai';
+
+$w.onReady(function () {
+    let chatArray = [];
+    $w('#userText').text="";
+    $w('#BrisaText').text="";
+    $w('#chatLogRepeater').data=[];
+    $w('#textInput').value="";
+
+    const askQuestion = async ()=>{
+        const text = $w('#textInput').value; //Whatever there is in the chatbox will be saved as text
+        $w('#textInput').value=""; //emptying the texbox
+        if(chatArray.length===1){ //Checking if the box has one value, this will be the name of the user
+            name=text; //if the chatarray is not equal than 1 then the this will not ocurre
+        }
+        chatArray.push({//pushing the name that in this case was taken from the text above for the 1st ocurrency, and the text also as the name
+            name,
+            text,
+            _id: Math.floor(Math.random()*1000000000).toString(),
+        }) //Pushing the text to the array.
+        $w('#chatLogRepeater').data=chatArray;
+        $w('#chatbarSection').scrollTo(); //scrolling down
+        const answer = await generatePrompt(chatArray); //Sending the chat array to the AI and an answer will be returned
+        chatArray.push({
+            text: answer,
+            _id: Math.floor(Math.random()*1000000000).toString(),
+        })
+        console.log(chatArray);
+        $w('#chatLogRepeater').data=chatArray;
+        $w('#chatbarSection').scrollTo();
+    }
+    
+        $w('#chatLogRepeater').onItemReady(($item, itemData)=>{
+        if (itemData.name !== undefined && itemData.name !== "Chatbot"){
+            $item("#userText").text=`${itemData.name}: ${itemData.text}`;
+            $item("#userBox").show();
+        } else {
+            $item("#BrisaText").text=itemData.text.slice(2);
+            $item("#BrisaBox").show();
+        }
+        //$item("#text").text=`${itemData.name}:${itemData.text}`;
+    })
+
+    const askForName = () => {
+        const nameQuestion = {
+            name: "Chatbot",
+            text: "\n\nWhat is your name?",
+            _id: Math.floor(Math.random()*1000000000).toString()
+        }
+        chatArray.push(nameQuestion);
+        $w('#chatLogRepeater').data=chatArray;
+        $w('#chatLogRepeater').show();
+    }
+
+    askForName();
+
+    $w('#sendButton').onClick(askQuestion);
+
+    $w('#textInput').onKeyPress((event) => {
+        if(event.key === "Enter") askQuestion();
+    })
+
+});
