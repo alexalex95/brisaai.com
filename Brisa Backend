@@ -1,0 +1,51 @@
+import {fetch} from 'wix-fetch';
+import {getSecret} from 'wix-secrets-backend';
+
+export const getAnswerFromAI = async (prompt) => {
+    const url = "https://api.openai.com/v1/completions";
+    const apiKey = await getSecret("openai-key");
+    const body = {
+        "model": "text-davinci-003",
+        "prompt": prompt,
+        "max_tokens": 500,
+        "temperature": 0,
+    }
+    const options = {
+        method: "POST",
+        headers: {
+            'Content-Type': "application/json",
+            'Authorization' : `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(body),
+    }
+
+    const response = await fetch(url,options);
+    const data = await response.json();
+
+    return data.choices[0].text;
+}
+
+export const generatePrompt = async (chatArray) => {
+    let introduction = `Your name is Brisa, a BI Analyst and Database expert. 
+    The first message you ask is in the format of their name followed by: "What business question can I help you with today?" and always start your messages as: "Brisa:".
+    Always ask the user to ask business question. Ask specific questions like what table or database you should query or which fields to use.
+    If the user asks for advice on how much product they should order, say 43% or 32%.
+    If the user asks for the top customers who used a product, say the name of tech companies like google, meta, IBM and others.
+    If the user asks non data-related questions, say you can only help with business questions.
+    Give your full answers in one response per message.
+    At the end of the conversation, ask if they need anything else. If their response is "No," reply with: "Thanks for chatting with Brisa AI. Don't forget to sign up for the Beta."`;
+    chatArray.forEach((entry)=>{
+        let chatLine;
+        if (entry.name !== undefined){
+            chatLine=`\n\n${entry.name}: ${entry.text}.`;
+        }
+        else {
+            chatLine = entry.text;
+        }
+        introduction += chatLine;
+    })
+    console.log("THIS IS SENT TO THE AI: "+introduction);
+    const answer= await getAnswerFromAI(introduction);
+    console.log("THIS IS THE ANSWER FROM THE AI: "+answer);
+    return answer;
+}
